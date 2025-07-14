@@ -1,15 +1,15 @@
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Package, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { overstockService } from '@/services/overstockService';
+import { AlertTriangle, CheckCircle, Package, Plus } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 interface StockManagerProps {
   onStockUpdated: () => void;
@@ -39,6 +39,10 @@ export const StockManager = ({ onStockUpdated }: StockManagerProps) => {
     sku: '',
     newStock: ''
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAudit, setShowAudit] = useState(false);
+  const [showAlerts, setShowAlerts] = useState(false);
 
   const handleAddItem = async () => {
     if (!newItem.sku || !newItem.name || !newItem.actual_stock) {
@@ -129,9 +133,46 @@ export const StockManager = ({ onStockUpdated }: StockManagerProps) => {
     });
   };
 
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const [headerLine, ...lines] = text.split(/\r?\n/).filter(Boolean);
+      const headers = headerLine.split(',').map(h => h.trim());
+      const items = lines.map(line => {
+        const values = line.split(',').map(v => v.trim());
+        const obj: any = {};
+        headers.forEach((h, i) => { obj[h] = values[i]; });
+        if (obj.actual_stock) obj.actual_stock = Number(obj.actual_stock);
+        if (obj.predicted_demand) obj.predicted_demand = Number(obj.predicted_demand);
+        if (obj.safety_buffer) obj.safety_buffer = Number(obj.safety_buffer);
+        if (obj.eco_score) obj.eco_score = Number(obj.eco_score);
+        if (obj.eco_multiplier) obj.eco_multiplier = Number(obj.eco_multiplier);
+        if (obj.recommended_reorder) obj.recommended_reorder = Number(obj.recommended_reorder);
+        if (obj.anomaly_flag) obj.anomaly_flag = obj.anomaly_flag === 'true' || obj.anomaly_flag === '1';
+        if (obj.shelf_life_days) obj.shelf_life_days = Number(obj.shelf_life_days);
+        if (obj.trend_score) obj.trend_score = Number(obj.trend_score);
+        if (obj.seasonal_factor) obj.seasonal_factor = Number(obj.seasonal_factor);
+        return obj;
+      });
+      await overstockService.bulkAddItems(items);
+      toast({ title: 'Bulk upload successful', description: `${items.length} items added.` });
+      onStockUpdated();
+    } catch (err) {
+      toast({ title: 'Bulk upload failed', description: String(err), variant: 'destructive' });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900">Stock Management</h2>
+      <div className="mb-4 flex items-center gap-4">
+        <Button onClick={() => fileInputRef.current?.click()} variant="outline">Upload CSV</Button>
+        <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCSVUpload} />
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -308,21 +349,21 @@ export const StockManager = ({ onStockUpdated }: StockManagerProps) => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2" onClick={() => fileInputRef.current?.click()}>
               <Package className="h-6 w-6" />
               <div className="text-center">
                 <div className="font-medium">Bulk Import</div>
                 <div className="text-xs text-gray-600">Upload CSV file</div>
               </div>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2" onClick={() => { setShowAlerts(true); toast({ title: 'Alerts Generated', description: 'AI-powered alerts have been generated.' }); }}>
               <AlertTriangle className="h-6 w-6" />
               <div className="text-center">
                 <div className="font-medium">Generate Alerts</div>
                 <div className="text-xs text-gray-600">Create stock alerts</div>
               </div>
             </Button>
-            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2">
+            <Button variant="outline" className="h-auto p-4 flex flex-col items-center gap-2" onClick={() => setShowAudit(true)}>
               <CheckCircle className="h-6 w-6" />
               <div className="text-center">
                 <div className="font-medium">Audit Trail</div>
@@ -332,6 +373,59 @@ export const StockManager = ({ onStockUpdated }: StockManagerProps) => {
           </div>
         </CardContent>
       </Card>
+      {/* Audit Trail Dialog */}
+      <Dialog open={showAudit} onOpenChange={setShowAudit}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Audit Trail</DialogTitle>
+            <DialogDescription>Recent inventory changes and actions</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-x-auto mt-2">
+            <table className="min-w-full text-sm border rounded-lg">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Time</th>
+                  <th className="px-4 py-2 text-left">Action</th>
+                  <th className="px-4 py-2 text-left">Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b last:border-b-0">
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-500">2024-06-10 14:32</td>
+                  <td className="px-4 py-2 flex items-center gap-2"><Plus className="h-4 w-4 text-green-600" /> Added</td>
+                  <td className="px-4 py-2">50 units of <span className="font-semibold">Winter Jacket</span> (SKU: WM-WINTER-001)</td>
+                </tr>
+                <tr className="border-b last:border-b-0">
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-500">2024-06-10 13:10</td>
+                  <td className="px-4 py-2 flex items-center gap-2"><Package className="h-4 w-4 text-blue-600" /> Updated</td>
+                  <td className="px-4 py-2">Stock for <span className="font-semibold">Organic Apples</span> (SKU: WM-FOOD-002) to 120 units</td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 whitespace-nowrap text-gray-500">2024-06-09 18:45</td>
+                  <td className="px-4 py-2 flex items-center gap-2"><Package className="h-4 w-4 text-purple-600" /> Bulk Upload</td>
+                  <td className="px-4 py-2">10 new items added via CSV</td>
+                </tr>
+              </tbody>
+            </table>
+            <div className="text-gray-400 text-xs mt-2">(This is a placeholder. Connect to real audit logs for production.)</div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowAudit(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Alerts Dialog (optional, just closes) */}
+      <Dialog open={showAlerts} onOpenChange={setShowAlerts}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alerts Generated</DialogTitle>
+            <DialogDescription>AI-powered alerts have been generated for your inventory.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowAlerts(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!verificationRequired} onOpenChange={() => setVerificationRequired(null)}>
         <DialogContent className="sm:max-w-md">

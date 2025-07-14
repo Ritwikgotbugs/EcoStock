@@ -32,7 +32,13 @@ router.get('/', async (req, res) => {
         { model: TrendingBuzzword, as: 'trending_buzzwords', through: { attributes: [] } }
       ]
     });
-    res.json(items);
+    // Flatten eco_score value
+    const result = items.map(item => {
+      const obj = item.toJSON();
+      obj.eco_score = obj.eco_score && typeof obj.eco_score === 'object' && obj.eco_score.value !== undefined ? obj.eco_score.value : (obj.eco_score || 0);
+      return obj;
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -49,7 +55,9 @@ router.get('/:id', async (req, res) => {
       ]
     });
     if (!item) return res.status(404).json({ error: 'Not found' });
-    res.json(item);
+    const obj = item.toJSON();
+    obj.eco_score = obj.eco_score && typeof obj.eco_score === 'object' && obj.eco_score.value !== undefined ? obj.eco_score.value : (obj.eco_score || 0);
+    res.json(obj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

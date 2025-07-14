@@ -1,9 +1,10 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Progress } from "@/components/ui/progress";
 import { overstockService } from '@/services/overstockService';
-import { Leaf } from 'lucide-react';
+import { CheckCircle, Cloud, Droplet, Factory, Hourglass, Info, Leaf, MapPin, Package, Recycle, RefreshCcw, Truck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface EcoScoreCardProps {
@@ -47,6 +48,28 @@ export const EcoScoreCard = ({ data }: EcoScoreCardProps) => {
           <CardTitle className="flex items-center gap-2 text-green-800">
             <Leaf className="h-5 w-5" />
             Sustainability Overview
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Info className="h-4 w-4 text-green-500 cursor-pointer hover:text-green-700 transition" />
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80">
+                <div className="font-semibold mb-2 flex items-center gap-2 text-green-800">
+                  <Leaf className="h-4 w-4" /> Eco Score Parameters
+                </div>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2"><RefreshCcw className="h-4 w-4 mt-0.5 text-blue-500" /> <span><b>Recyclability & Renewability</b>: Preference for materials that can be recycled or renewed.</span></li>
+                  <li className="flex items-start gap-2"><Cloud className="h-4 w-4 mt-0.5 text-gray-500" /> <span><b>Emission per kg</b>: Lower greenhouse gas emissions per kilogram are better.</span></li>
+                  <li className="flex items-start gap-2"><Factory className="h-4 w-4 mt-0.5 text-yellow-600" /> <span><b>Manufacturing Energy & Emission</b>: Considers energy use and emissions during production, including location impact.</span></li>
+                  <li className="flex items-start gap-2"><Droplet className="h-4 w-4 mt-0.5 text-blue-400" /> <span><b>Water Consumption</b>: Fewer litres used in production is better.</span></li>
+                  <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-emerald-500" /> <span><b>Distance Travelled</b>: Shorter supply chain distances (in km) reduce impact.</span></li>
+                  <li className="flex items-start gap-2"><Truck className="h-4 w-4 mt-0.5 text-orange-500" /> <span><b>Mode of Transport</b>: Eco-friendly transport (rail, sea) scores higher than air or road.</span></li>
+                  <li className="flex items-start gap-2"><Package className="h-4 w-4 mt-0.5 text-purple-500" /> <span><b>Packaging Material</b>: Sustainable, minimal, or recycled packaging is preferred.</span></li>
+                  <li className="flex items-start gap-2"><Recycle className="h-4 w-4 mt-0.5 text-green-600" /> <span><b>Is Biodegradable</b>: Biodegradable products score higher.</span></li>
+                  <li className="flex items-start gap-2"><CheckCircle className="h-4 w-4 mt-0.5 text-green-500" /> <span><b>Is Recyclable Packaging</b>: Packaging that can be recycled improves the score.</span></li>
+                  <li className="flex items-start gap-2"><Hourglass className="h-4 w-4 mt-0.5 text-gray-700" /> <span><b>Product Decomposability Time</b>: Faster decomposition is better for the environment.</span></li>
+                </ul>
+              </HoverCardContent>
+            </HoverCard>
           </CardTitle>
           <CardDescription className="text-green-700">
             Environmental impact analysis of current inventory

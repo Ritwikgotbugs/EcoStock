@@ -1,13 +1,19 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { OverstockData } from '@/services/overstockService';
+import { useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { AlertsPanel } from './AlertsPanel';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { Separator } from './ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface StockAnalyticsProps {
   data: OverstockData | undefined;
 }
 
 export const StockAnalytics = ({ data }: StockAnalyticsProps) => {
+  const [activeTab, setActiveTab] = useState('stock');
   if (!data?.overstock_items) {
     return <div className="text-center py-8">No analytics data available.</div>;
   }
@@ -53,101 +59,10 @@ export const StockAnalytics = ({ data }: StockAnalyticsProps) => {
   const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Stock Analytics</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Stock Levels Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stock vs Predicted Demand</CardTitle>
-            <CardDescription>Comparing actual stock levels with AI predictions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stockLevelsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="predicted" fill="#3b82f6" name="Predicted Demand" />
-                <Bar dataKey="actual" fill="#ef4444" name="Actual Stock" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Category Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Overstock by Category</CardTitle>
-            <CardDescription>Distribution of overstocking across product categories</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryChartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="total" fill="#94a3b8" name="Total Items" />
-                <Bar dataKey="overstocked" fill="#ef4444" name="Overstocked" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Eco Score Distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Eco Score Distribution</CardTitle>
-            <CardDescription>Environmental impact scoring across inventory</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={ecoScoreData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 1).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {ecoScoreData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Eco Impact vs Stock Level */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Eco Score vs Stock Efficiency</CardTitle>
-            <CardDescription>Relationship between environmental impact and stocking efficiency</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={stockLevelsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="ecoScore" stroke="#22c55e" strokeWidth={3} name="Eco Score %" />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-8 max-w-4xl mx-auto">
+      <h2 className="text-3xl font-bold text-gray-900 mb-2">Inventory Analytics</h2>
+      <p className="text-gray-600 mb-6">Key insights and visualizations for your inventory health and sustainability.</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
         <Card className="bg-gradient-to-r from-blue-50 to-blue-100">
           <CardContent className="p-6 text-center">
             <div className="text-2xl font-bold text-blue-600">
@@ -173,6 +88,85 @@ export const StockAnalytics = ({ data }: StockAnalyticsProps) => {
           </CardContent>
         </Card>
       </div>
+      <Separator />
+      <Card className="shadow-md">
+        <CardHeader>
+          <CardTitle className="text-lg">Analytics Visualizations</CardTitle>
+          <CardDescription>Switch between different inventory insights</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4 grid grid-cols-4 gap-2">
+              <TabsTrigger value="stock">Stock vs Demand</TabsTrigger>
+              <TabsTrigger value="category">Overstock by Category</TabsTrigger>
+              <TabsTrigger value="eco">Eco Score Distribution</TabsTrigger>
+              <TabsTrigger value="efficiency">Eco vs Efficiency</TabsTrigger>
+            </TabsList>
+            <TabsContent value="stock">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={stockLevelsData} margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Bar dataKey="predicted" fill="#3b82f6" name="Predicted Demand" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="actual" fill="#ef4444" name="Actual Stock" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 text-xs text-gray-500">Products with actual stock far above predicted demand may indicate overstocking.</div>
+            </TabsContent>
+            <TabsContent value="category">
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={categoryChartData} margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Bar dataKey="total" fill="#94a3b8" name="Total Items" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="overstocked" fill="#ef4444" name="Overstocked" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 text-xs text-gray-500">Focus on categories with high overstocked ratios to optimize inventory.</div>
+            </TabsContent>
+            <TabsContent value="eco">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={ecoScoreData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {ecoScoreData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-2 text-xs text-gray-500">Aim for more items in the "Good" and "Excellent" eco score ranges.</div>
+            </TabsContent>
+            <TabsContent value="efficiency">
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={stockLevelsData} margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" fontSize={12} />
+                  <YAxis fontSize={12} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="ecoScore" stroke="#22c55e" strokeWidth={3} name="Eco Score %" />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="mt-2 text-xs text-gray-500">Higher eco scores with optimal stock levels indicate sustainable inventory management.</div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+      <Separator />
+      
     </div>
   );
 };

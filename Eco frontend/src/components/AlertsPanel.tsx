@@ -1,15 +1,23 @@
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, TrendingDown, Leaf, Clock, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from '@/hooks/use-toast';
 import { OverstockData } from '@/services/overstockService';
+import { AlertTriangle, CheckCircle, Clock, Leaf } from 'lucide-react';
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 
 interface AlertsPanelProps {
   data: OverstockData | undefined;
 }
 
 export const AlertsPanel = ({ data }: AlertsPanelProps) => {
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [detailsItem, setDetailsItem] = useState<any | null>(null);
+  const [actionItem, setActionItem] = useState<any | null>(null);
+  const { toast } = useToast();
+
   if (!data?.overstock_items) {
     return <div className="text-center py-8">No alerts data available.</div>;
   }
@@ -28,6 +36,7 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
 
   const allAlerts = [
     ...criticalAlerts.map(item => ({
+      key: `critical-${item.sku}`,
       type: 'critical',
       icon: AlertTriangle,
       color: 'red',
@@ -37,6 +46,7 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
       timestamp: '2 hours ago'
     })),
     ...seasonalAlerts.map(item => ({
+      key: `seasonal-${item.sku}`,
       type: 'seasonal',
       icon: Clock,
       color: 'yellow',
@@ -46,6 +56,7 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
       timestamp: '4 hours ago'
     })),
     ...ecoAlerts.map(item => ({
+      key: `eco-${item.sku}`,
       type: 'eco',
       icon: Leaf,
       color: 'orange',
@@ -54,7 +65,7 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
       item: item,
       timestamp: '1 day ago'
     }))
-  ].slice(0, 6); // Limit to 6 most recent alerts
+  ].filter(alert => !dismissed.has(alert.key)).slice(0, 6); // Limit to 6 most recent alerts
 
   const getAlertStyles = (color: string) => {
     switch (color) {
@@ -111,12 +122,12 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
               const IconComponent = alert.icon;
               return (
                 <div
-                  key={index}
+                  key={alert.key}
                   className={`p-4 rounded-lg border ${getAlertStyles(alert.color)} transition-all duration-200 hover:shadow-sm`}
                 >
                   <div className="flex items-start gap-3">
                     <IconComponent className={`h-5 w-5 mt-0.5 ${getIconColor(alert.color)}`} />
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="font-medium text-gray-900">{alert.title}</h4>
                         <span className="text-xs text-gray-500">{alert.timestamp}</span>
@@ -132,13 +143,16 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
                       
                       {/* Quick Actions */}
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" variant="outline" className="text-xs h-7">
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setDetailsItem(alert.item)}>
                           View Details
                         </Button>
-                        <Button size="sm" variant="outline" className="text-xs h-7">
+                        <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => setActionItem(alert.item)}>
                           Create Action
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-xs h-7 text-gray-500">
+                        <Button size="sm" variant="ghost" className="text-xs h-7 text-gray-500" onClick={() => {
+                          setDismissed(prev => new Set(prev).add(alert.key));
+                          toast({ title: 'Alert Dismissed', description: alert.title });
+                        }}>
                           Dismiss
                         </Button>
                       </div>
@@ -168,6 +182,57 @@ export const AlertsPanel = ({ data }: AlertsPanelProps) => {
           </div>
         </div>
       </CardContent>
+      {/* Details Dialog */}
+      <Dialog open={!!detailsItem} onOpenChange={open => !open && setDetailsItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Alert Details</DialogTitle>
+            <DialogDescription>Full details for {detailsItem?.name}</DialogDescription>
+          </DialogHeader>
+          {detailsItem && (
+            <div className="space-y-2">
+              <div><b>SKU:</b> {detailsItem.sku}</div>
+              <div><b>Region:</b> {detailsItem.region}</div>
+              <div><b>Stock:</b> {detailsItem.actual_stock}</div>
+              <div><b>Demand:</b> {detailsItem.predicted_demand}</div>
+              <div><b>Eco Score:</b> {(detailsItem.eco_score * 100).toFixed(0)}%</div>
+              <div><b>Category:</b> {detailsItem.category}</div>
+              <div><b>Status:</b> {detailsItem.anomaly_flag ? 'Anomaly' : 'Normal'}</div>
+              <div><b>Reason:</b> {detailsItem.anomaly_reason}</div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setDetailsItem(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Create Action Dialog */}
+      <Dialog open={!!actionItem} onOpenChange={open => !open && setActionItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Action</DialogTitle>
+            <DialogDescription>Log a follow-up or assign a task for {actionItem?.name}</DialogDescription>
+          </DialogHeader>
+          {actionItem && (
+            <form onSubmit={e => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const note = (form.elements.namedItem('note') as HTMLInputElement).value;
+              toast({ title: 'Action Created', description: `Action for ${actionItem.name}: ${note}` });
+              setActionItem(null);
+            }}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">Action/Note</label>
+                <input name="note" className="w-full border rounded px-2 py-1" placeholder="Describe the action or note..." required />
+              </div>
+              <DialogFooter>
+                <Button type="submit">Create</Button>
+                <Button type="button" variant="outline" onClick={() => setActionItem(null)}>Cancel</Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

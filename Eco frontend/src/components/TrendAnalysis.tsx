@@ -39,67 +39,77 @@ export const TrendAnalysis = ({ data }: TrendAnalysisProps) => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 max-w-5xl mx-auto">
       {/* Hero/USP Section */}
       <div className="rounded-xl bg-emerald-600/90 p-6 text-white shadow flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold mb-1">Real-Time Stock Optimization</h2>
-          <p className="text-lg font-medium opacity-90">Our AI dynamically adjusts your stock based on trending buzzwords and seasonal changes—so you never miss a sales opportunity or overstock.</p>
+          <h2 className="text-xl md:text-2xl font-bold mb-1">Real-Time Stock Optimization</h2>
+          <p className="text-base opacity-90">Our AI dynamically adjusts your stock based on trending buzzwords and seasonal changes—so you never miss a sales opportunity or overstock.</p>
         </div>
         <div className="flex flex-wrap gap-2 mt-2 md:mt-0">
           {trendingBuzzwords.slice(0, 3).map((buzz, i) => (
-            <Badge key={i} className="bg-white/20 border-white/30 text-white text-base px-3 py-1 flex items-center gap-1">
+            <Badge key={i} className="bg-white/20 border-white/30 text-white text-sm px-2 py-1 flex items-center gap-1">
               <Tag className="h-4 w-4" /> {buzz.word}
             </Badge>
           ))}
         </div>
       </div>
 
-      {/* Trends Impact Panel */}
-      <Card className="border-emerald-200 bg-white/95">
+      {/* Trending Buzzwords Table */}
+      <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-emerald-700">
-            <TrendingUp className="h-5 w-5" /> Trending Buzzwords Impact
+          <CardTitle className="flex items-center gap-2 text-emerald-700 text-lg">
+            <TrendingUp className="h-5 w-5" /> Trending Buzzwords Table
           </CardTitle>
-          <CardDescription className="text-gray-700">How trending topics and seasons are changing your stock numbers right now</CardDescription>
+          <CardDescription className="text-gray-700 text-sm">Key trending words, their impact, and associated items</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {trendingBuzzwords.map((buzz, i) => (
-              <div key={i} className="flex flex-col md:flex-row md:items-center justify-between bg-emerald-50/60 rounded-lg p-4 border border-emerald-100 mb-2">
-                <div className="flex items-center gap-2 mb-2 md:mb-0">
-                  <Badge className="bg-emerald-600 text-white font-semibold px-2 py-1 text-sm"><Tag className="h-4 w-4 mr-1 inline" />{buzz.word}</Badge>
-                  <span className="text-gray-800 font-medium">{buzz.item}</span>
-                </div>
-                <div className="flex flex-col md:items-end">
-                  <span className="text-emerald-700 font-bold text-lg">{buzz.impact}</span>
-                  <span className="text-xs text-gray-600">{buzz.reason}</span>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm border rounded-lg">
+              <thead className="bg-emerald-100">
+                <tr>
+                  <th className="px-4 py-2 text-left">Word</th>
+                  <th className="px-4 py-2 text-left">Impact</th>
+                  <th className="px-4 py-2 text-left">Item</th>
+                  <th className="px-4 py-2 text-left">Reason</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trendingBuzzwords.map((buzz, i) => (
+                  <tr key={i} className="border-b last:border-b-0">
+                    <td className="px-4 py-2 font-semibold text-emerald-700">{buzz.word}</td>
+                    <td className="px-4 py-2">{buzz.impact}</td>
+                    <td className="px-4 py-2">{buzz.item}</td>
+                    <td className="px-4 py-2 text-gray-600">{buzz.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          <div className="mt-2 text-xs text-gray-500">Monitor these buzzwords to anticipate demand spikes and optimize stock allocation.</div>
         </CardContent>
       </Card>
 
       {/* Seasonal Trends Chart */}
-      <Card className="border-emerald-200 bg-white/95">
+      <Card className="shadow-md">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-emerald-700">
+          <CardTitle className="flex items-center gap-2 text-emerald-700 text-lg">
             <Activity className="h-5 w-5" /> Seasonal Demand Patterns
           </CardTitle>
-          <CardDescription className="text-gray-700">See how seasonality is affecting your inventory</CardDescription>
+          <CardDescription className="text-gray-700 text-sm">See how seasonality is affecting your inventory</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={seasonalTrends}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
+            <AreaChart data={seasonalTrends} margin={{ left: 10, right: 10 }}>
+              <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" />
+              <XAxis dataKey="month" fontSize={13} tick={{ fill: '#059669' }} />
+              <YAxis fontSize={13} tick={{ fill: '#059669' }} />
+              <Tooltip contentStyle={{ background: '#fff', border: '1px solid #059669', fontSize: 13 }} />
               <Area type="monotone" dataKey="winter_items" stackId="1" stroke="#059669" fill="#059669" fillOpacity={0.25} name="Winter Items" />
               <Area type="monotone" dataKey="summer_items" stackId="1" stroke="#10b981" fill="#10b981" fillOpacity={0.25} name="Summer Items" />
             </AreaChart>
           </ResponsiveContainer>
+          <div className="mt-2 text-xs text-gray-500">Use these patterns to plan for seasonal overstock or shortages and adjust procurement accordingly.</div>
         </CardContent>
       </Card>
     </div>

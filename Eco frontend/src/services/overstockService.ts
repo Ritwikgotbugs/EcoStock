@@ -61,6 +61,30 @@ export const overstockService = {
     if (!res.ok) throw new Error('Failed to add item');
   },
 
+  deleteItem: async (id: number) => {
+    const res = await fetch(`${API_BASE}/overstock/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete item');
+    return await res.json();
+  },
+  updateItem: async (id: number, data: Partial<OverstockItem>) => {
+    const res = await fetch(`${API_BASE}/overstock/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Failed to update item');
+    return await res.json();
+  },
+  bulkAddItems: async (items: Partial<OverstockItem>[]) => {
+    const res = await fetch(`${API_BASE}/overstock/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items)
+    });
+    if (!res.ok) throw new Error('Failed to bulk add items');
+    return await res.json();
+  },
+
   getSeasonalTrends: async () => {
     const res = await fetch(`${API_BASE}/seasonal`);
     if (!res.ok) throw new Error('Failed to fetch seasonal trends');

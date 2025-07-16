@@ -25,7 +25,7 @@ export interface OverstockData {
   overstock_items: OverstockItem[];
 }
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'https://ecostock-backend.onrender.com/api';
 
 export const overstockService = {
   getOverstockData: async (): Promise<OverstockData> => {
